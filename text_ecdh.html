@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- 测试ECC加密，与后端的加密做对比 -->
+  <meta charset="utf-8" > 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">    
+  <title>ECC加密</title>
+  <!-- <link rel="stylesheet" type="text/css" href="./style.css"> -->
+  <script src= './bytesForms.js'></script>
+  <script src= './axlsign.js'></script>
+  <script src= './cryptoMgr.js'></script> 
+    
+  <link rel="stylesheet" type="text/css" href="common.css">
+    <script src= './common.js'></script>
+  
+</head>
+<body>
+    <div id='header'>
+        <div style='display:inline;font-weight:600;'>Curve 25519 加密</div> 
+        <div style='display:inline' id='status'></div>
+        <div style='display:inline' id='expire'></div>
+        <button class='btn' id='show_footer' style='display:inline; float:right; visibility:hidden; font-weight:600' onclick='reset_footer()'>&#8896;</button>    
+    </div>
+    
+    <div id='nav'>
+        <div class='navlink'></div>
+    </div>
+    
+    <div id='main'>
+<!--        以下开始正文内容-->
+        
+    <p>收到服务器的链接,@后面是base64公钥：</p>
+    <input type='text' id="URL" class='inputbox' style='background-color:aqua; min-height: 3rem;
+    white-space: pre-wrap; word-wrap: break-all; overflow:auto;'>
+    <br>    <br>
+      
+    <h3>本地密钥</h3>
+    <button onclick="getMyEck()"><b>生成本地密钥！</b></button><br> 
+    <p>私钥</p>
+    <div id="client-sk" class="outputbox">暂无</div>
+    <p>发给服务器的公钥</p>
+    <div id="client-pk" class="outputbox">暂无</div>
+  
+    <br>
+    <button onclick="getShared()"><b>服务器与本地配出共享密钥！</b></button><br>
+    <h3>共享密钥：</h3>
+    <p>16进制表示</p>
+    <div id="output16" class="outputbox" style='background-color:cornflowerblue'>暂无</div>
+        
+        
+    <p> <a href='./text_cbc.html'>选择一 -> 继续文本加密解密</a> </p>
+        
+<!--        正文内容结束-->
+    </div>
+    
+ 
+    <div id='footbar'>
+        <button class='btn' onclick='maximize_footer()'>&#8892;</button>
+        <button class='btn' onclick='increase_footer()'>&#8896;</button>             
+        <b>&emsp;程序 执行 过程&emsp;</b> 
+        <button class='btn' onclick='decrease_footer()'>&#8897;</button>
+        <button class='btn' style='font-weight:600' onclick='hide_footer()'>&#8891;</button>
+
+    </div>  
+   
+    <div id='logger'>
+     </div>    
+
+
+        
+    
+<script>   
+var serverLock;
+    
+function checkUrlPK(){
+    //从url中拿到公钥;抄袭url2Lock函数
+    
+    let rawLock = window.location.href.split('@')[1]
+    let re = new RegExp('[A-Za-z0-9*-]{43}[\.]')
+    if( re.exec(rawLock) ){
+        log(`服务器提供的锁格式合法，为${rawLock}`)
+        serverLock = rawLock
+        document.getElementById("URL").value = window.location.href
+    }else{
+        log(`服务器提供的锁 ${rawLock} 格式非法，请填入官方提供的网址！`,true)
+    } 
+    
+};
+    
+window.onload = checkUrlPK();
+window.onunload = ()=>localStorage.removeItem('crypted'); 
+    
+var MyEck;    
+function getMyEck(){
+    MyEck = genkey();
+    let myLock = b2Base64(MyEck.public);
+    sessionStorage.setItem('myLock', myLock);
+    log('已经生成本机专用密钥。');
+    
+    document.getElementById("client-sk").innerText = b2Hex(MyEck.private);
+    document.getElementById("client-pk").innerText = myLock;
+    newStatus('本地密钥可用');
+}    
+
+async function get_shared(){ 
+  let url = document.getElementById("URL").value //测试版
+  let client_lock = document.getElementById("client-pk").innerText
+  let reply
+//https://www.liaoxuefeng.com/wiki/1022910821149312/1536754328797217
+  try{
+      reply = await put( baseurl+'/ecdh', {id:client_lock, server_pk:serverLock} )      
+  }catch(err){
+      if (err==443) {
+        setTimeout(twoinone, 500)
+        log('重新生成本地椭圆密钥')
+      }
+      return
+    }
+    
+    
+    
+   log(`收到消息${JSON.stringify(reply)}`)
+    
+    try{
+        await mingle(url)
+    }catch(err){
+        log(`本地调制密钥出错 ${err}`, true)
+        return
+    }
+    
+    document.getElementById("output16").innerText = sessionStorage['sharedSecret']
+    newStatus('端到端加密中')
+    setExpire(reply.maxage-1)
+};
+    
+function getShared(){
+     if (localStorage.crypted){
+         alert("请在之前打开的页面继续办理业务！或关闭所有页面再重试");
+         log('已经在别的页面开展加密通信。本页加密程序自动终止。');
+         return null;
+     }
+    get_shared().then(re=>{}  ) //为了执行async函数必须付出的代价
+};
+    
+function twoinone(){
+    getMyEck()
+    getShared()
+};    
+    </script>
+</body>
+</html>

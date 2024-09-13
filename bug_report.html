@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报错填录</title>
+    <style type="text/css">
+
+    h4{
+        margin-bottom:0.5em;
+    }
+        
+    button{
+    background-color:coral;
+    border-color: coral; 
+    border-radius:0.5em;
+    
+    box-shadow: 0.2em 0.2em #ccc;
+    text-indent: 0.25em;
+    vertical-align: middle;
+        }
+        
+    textarea{
+        width:calc(min(1.25 * 20em , 100% ));
+        overflow-x: auto;
+        height:calc(1.25  * 5em);
+        font-size:125%;
+        font-weight:600;
+        background-color:azure;
+        
+    }
+    </style>
+    
+</head>
+    
+<body>
+    <p>很抱歉网页程序发生了错误。请您补全错误信息，以帮助改错，谢谢！</p>
+    <h4>用户名</h3>
+    <div id='user'></div>
+    <h4>出错提示</h3>
+    <div id='errLog'></div>
+    <h4>请简要描述出错前的场景和操作</h3>
+    <div style='margin:auto'>
+        <textarea id='description' cols=20 rows=5 maxlength=100 wrap="hard"></textarea>
+    </div>
+      
+    
+        
+    <button onclick='submit()'>提交错误报告！</button>
+    <span id='result' style='font-weight:600'></span><br>
+    <span id='timeout' style='font-size:200%;color:green'></span>
+    
+    
+    
+<script>
+window.onload = ()=>{
+    document.getElementById('user').innerText = localStorage.currentUser;
+    document.getElementById('errLog').innerText = localStorage.currentErr;   
+
+};
+
+function countDown(i){
+// https://blog.csdn.net/injavawetrust/article/details/101688749
+    if(i>0){
+        document.getElementById('timeout').innerText = i;
+        setTimeout(countDown, 1000, i-1);
+    }else{
+        self.close();
+    }
+};
+    
+function transBantime(str){
+    //str = 'bantime:1721272368.0238206'
+    let timestamp = Number( str.slice(8,-1) )*1000 //8位以后是时间戳, *1000是因为python的单位是秒，而JS单位是毫秒
+    let utc = (new Date(timestamp) )
+    let repr = `${utc.toLocaleDateString()} ${utc.toLocaleTimeString()}`
+    repr += " +0~30’" //服务器自己的误差
+    return repr    
+}; 
+
+//async function put(url, json){ //替fetch擦屁股
+//    let jsonFmt = {'Content-Type': 
+//                   'application/json;charset=utf-8' }
+//    let text = JSON.stringify(json)
+//    let re
+//    try{
+//        re=await fetch(url,{method: 'PUT', body:text, headers:jsonFmt})
+//    }catch(err){        
+//        alert('请求发送失败，可能是网站故障'+err)
+//        return Promise.reject(1)
+////https://blog.csdn.net/qq_39207948/article/details/85050687
+//    }   
+//    console.log(`服务器回复的标题：${re.status} ${re.statusText}`)
+//    msg = await re.json()
+//    
+//    if(re.status > 300){
+//        let errtext = 'N.A.'
+//        if (typeof msg.detail=='string'){
+//            errtext = msg.detail
+//        }else if (msg.detail instanceof Object){
+//            errtext = JSON.stringify(msg.detail)
+//        }else if (msg.detail instanceof Array){ 
+//            let errmsg = msg.detail[0]
+//            delete errmsg.ctx
+//            errtext = JSON.stringify(errmsg)
+//        }else{
+//            errtext = `${msg}`
+//        }
+//        
+//        if (re.status >399 && re.status <499){//400-499客户端自己的问题
+//            if(errtext.slice(0,8)=='bantime:'){
+//                let unbantime = transBantime(errtext)
+//                alert(`错误码${re.status} 请求过频被封至${unbantime}`)
+//            }else{
+//                alert(`错误码${re.status} 被服务器拒绝原因 ${errtext}`) 
+//            }  
+//        }else{
+//            alert(`错误码${re.status} 被服务器拒绝原因 ${errtext} 请求位置=${url} 发送消息=${text}`)
+//        } 
+//        
+//        return Promise.reject(re.status)
+//    }else{
+//        return msg      
+//    }    
+//}; 
+    
+
+
+function submit(){
+    let desc = document.getElementById('description').value
+    console.log(desc)
+    if (desc.length < 6){
+        alert("请输入更详细的出错场景和操作！")
+        return
+    }
+    if (localStorage.currentErr == null){
+        alert("错误已经提交过，或误打开此网页，请勿再点击提交按钮。如果无实际提交内容却重复向服务器发送请求，可能被封IP.")
+        return
+    }
+    
+    errmsg = {userid:localStorage.currentUser,
+       scenario:desc,
+       detail:localStorage.currentErr}
+
+    put('./msg/bug', errmsg)
+    .then(ret=>{
+        document.getElementById('result').innerText = ('错误已经录入系统。')
+        localStorage.removeItem('currentUser')
+        localStorage.removeItem('currentErr')
+        countDown(7)         
+    })
+};
+    
+    </script>    
+    
+</body>
+    
+    

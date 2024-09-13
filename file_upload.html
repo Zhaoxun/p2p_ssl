@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- 测试CBC加密，与后端的加密做对比，从ecdh.html跳转至此 -->
+  <meta charset="utf-8" >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上传文件与CBC加密</title>
+  <!-- <link rel="stylesheet" type="text/css" href="./style.css"> -->
+  <script src= './bytesForms.js'></script>
+  <script src= './axlsign.js'></script>
+  <script src= './cryptoMgr.js'></script>
+  <script src= './file.js'></script> 
+  <script src= './photo.js'></script> 
+
+  <link rel="stylesheet" type="text/css" href="common.css">
+    <script src= './common.js'></script>
+</head>
+<body>
+
+    <div id='header'>
+        <div style='display:inline;font-weight:600;'>文件上传 AES-CBC加密</div> 
+        <div style='display:inline' id='status'></div>
+        <div style='display:inline' id='expire'></div>
+        <button class='btn' id='show_footer' style='display:inline; float:right; visibility:hidden' onclick='reset_footer()'>&#8896;</button>    
+    </div>
+    
+    <div id='nav'>
+        <div class='navlink'></div>
+    </div>
+    
+    <div id='main'>
+<!--        以下开始正文内容-->    
+    
+    <p>加密用的密钥，以16进制码表示：</p>
+    <div id='key' class="outputbox">暂无</div>
+     <p>加密用的偏移量原型，以16进制码表示：</p>
+    <div id='IV' class="outputbox">暂无</div>   
+    
+    <button onclick="flashIndice()"><b>获取随机偏移量:</b></button>
+    <p>偏移量取值索引</p>
+    <div id="Indice" class="outputbox">暂无</div>
+    <button onclick="return copy( document.getElementById('Indice') )"><b>复制</b></button>
+    
+    <h3>无加密上传测试</h3>    
+    
+    <input type="file" id="File"  style='background-color:aqua'>
+    <br>
+    <button ><b>检查大小及压缩</b></button>&emsp;&emsp;
+    <button onclick="upload_simple()" ><b>直接上传！</b></button><br> 
+        
+    <h3>模拟真实上传</h3>
+    <p>需要上传的文件： (文件大小若超过限额&emsp;<span id='maxsize'></span>字节，会被压缩)
+        <button onclick='get_maxsize()' style="display:none" id='gm'>重新读取</button></p>
+     <p><b>请在网络状况良好时进行此操作！</b></p>   
+    <p>上传目标：优惠券被抢注</p>        
+    <p>请输入你的手机号码</p>
+        <input type="text" id="phone" class="inputbox" style='background-color:aqua' oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+        
+    
+    <p>证据图片1:</p>
+     <input type="file" id="Pic1" accept='image/*' style='background-color:aqua'>
+    <br>
+    <button id='shrink1' onclick="shrink('Pic1', 'up1')"><b>检查并压缩图片1</b></button>
+    <button id='up1' onclick="upload(1,'Pic1','up1','1st_stat', 'shrink1')" ><b>加密上传图片1</b></button>
+<!--        <div id='1st_stat' style='display:inline'></div>-->
+        <span id='1st_stat'></span>
+        <br>    
+        
+    <p>证据图片2: 。。。</p>
+        
+    <h3>绘图区</h3>
+        
+    <p><span id='filedata'></span> </p>
+    <div>允许裁边的位置&emsp;
+        左<input type="radio" name='LR' id='LR' value='l' checked>
+        右<input type="radio" name='LR' id='LR' value='r'>
+        &emsp;
+        上<input type="radio" name='UD' id='UD' value='u' checked>
+        下<input type="radio" name='UD' id='UD' value='d'>
+        &emsp;&emsp;压缩尺度比=<span id='ratio'></span>
+    </div> <br> <br>
+        
+<!--    <div id='shrinkReport' class='outputbox'></div>  -->
+    <p><span id='shrinkReport'></span></p>
+
+    <div>
+    <canvas id='cvs' width="800" height="600" style='border:1px black solid'></canvas>
+        </div>   
+            
+            
+<!--        正文内容结束-->
+    </div>
+    
+ 
+    <div id='footbar'>
+        <button class='btn' onclick='maximize_footer()'>&#8892;</button>
+        <button class='btn' onclick='increase_footer()'>&#8896;</button>             
+        <b>&emsp;程序 执行 过程&emsp;</b> 
+        <button class='btn' onclick='decrease_footer()'>&#8897;</button>
+        <button class='btn' onclick='hide_footer()'>&#8891;</button>
+
+    </div>  
+   
+    <div id='logger'>
+     </div>        
+    
+<script>
+
+function init(){
+     disableBtn('up1')
+    
+     initCBC().then( ()=>{
+         document.getElementById('key').innerText = b2Hex(CBCkey);
+         document.getElementById('IV').innerText = b2Hex(CBCiv);
+         if (sessionStorage.currentIndice)
+             document.getElementById('Indice').innerText = '['+ 
+                 sessionStorage.currentIndice +']';
+//         window.currentIndice = null;              
+//     javascript特有的脑残级异步传染，顶层的写法：调用async函数之后都包在then里
+     } )
+ };
+ 
+window.onload = init;
+    
+window.onunload = ()=>localStorage.removeItem('crypted');
+    
+function get_maxsize(){
+    get('./file/maxsize').
+    catch(document.getElementById('gm').style.display = "" )
+    .then( (msg) => {
+        document.getElementById('maxsize').innerText = msg.maxsize
+        document.getElementById('gm').style.display = "none"
+    })
+};
+
+get_maxsize();
+    
+document.getElementById("Pic1").onchange = (e) =>readFileData(e) ;
+ 
+function flashIndice(){
+    currentIndice = randomIndice()
+    sessionStorage.setItem('currentIndice', currentIndice)
+    document.getElementById('Indice').innerText = '['+ currentIndice +']'
+};
+
+    
+function testEncrypt(){
+     srcText = document.getElementById('srcText').value;
+     indice = eval( document.getElementById('Indice').innerText )
+     encryptT(srcText, indice).then( (result) =>{ 
+         document.getElementById('sec16').innerText = result.msg;
+         document.getElementById('secSHA').innerText = result.sha30;
+     }    )
+ };
+    
+function upload_simple(){
+    let file = document.getElementById('File').files[0]
+    let name = file.name
+    let filetype = name.slice(name.lastIndexOf('.')+1, )
+    log(`文件大小${file.size}, 类型${filetype}`)
+    if (file.size>0){
+        upload1('./file/simple_file', file, filetype, 1, 1)
+    }
+};
+    
+function shrink(fileLoc, upBtnLoc){
+    afterShrink = ()=>renableBtn(upBtnLoc) 
+    let maxsize = Number(document.getElementById('maxsize').innerText)
+    initShrink(fileLoc, maxsize)
+};
+
+
+var upload_url = './file/upload';    
+
+    
+//后上传，上传的其实是已经压缩过的blob：tempJpeg
+function upload(picIndex, fileLoc, btnLoc, statLoc, upBtnLoc=null){
+    if (if_aes_ready() == false){return}
+    
+    done_notice = ()=>{
+        document.getElementById(statLoc).innerText='已完成'
+        disableBtn(btnLoc)
+        if (upBtnLoc) disableBtn(upBtnLoc)
+
+        clear('cvs')
+        document.getElementById('filedata').innerText = ''
+        document.getElementById('ratio').innerText = ''
+        document.getElementById('shrinkReport').innerText = ''
+    };
+    let name
+    
+    try{
+        name = document.getElementById(fileLoc).files[0].name
+    }catch{
+        log('文件尚未被选中！')
+        return
+    }
+    
+//    let file=document.getElementById(fileLoc).files[0]
+    let file = tempJpeg //真正上传的是这个，来自photo.js
+    
+    
+    Sending.start(  upload_url,
+                     file,
+                    'account occupied', 
+                    {'phone':document.getElementById('phone').value,
+                    'picIndex':picIndex}
+    ).then(()=>{})    
+
+};   
+
+
+    </script>
+</body>
+</html>

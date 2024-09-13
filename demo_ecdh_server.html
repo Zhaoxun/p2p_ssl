@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- 测试ECC加密，与后端的加密做对比 -->
+  <meta charset="utf-8" >  
+  <title>ECC加密</title>
+  <!-- <link rel="stylesheet" type="text/css" href="./style.css"> -->
+  <script src= './bytesForms.js'></script>
+  <script src= './axlsign.js'></script>
+  <script src= './cryptoMgr.js'></script> 
+    
+  <link rel="stylesheet" type="text/css" href="common.css">
+    <script src= './common.js'></script>
+  
+</head>
+<body>
+    <div id='header'>
+        <div style='display:inline;font-weight:600;'>Curve 25519 加密 - 模拟服务器</div> 
+        <div style='display:inline' id='status'></div>
+        
+        <button class='btn' id='show_footer' style='display:inline; float:right; visibility:hidden; font-weight:600' onclick='reset_footer()'>&#8896;</button>    
+    </div>
+    
+    <div id='nav'>
+        <div class='navlink'></div>
+    </div>
+    
+    <div id='main'>
+<!--        以下开始正文内容-->
+     <h3>本地密钥</h3>
+    <button onclick="getMyEck()"><b>生成本地密钥！</b></button><br> 
+    <p>私钥</p>
+    <div id="server-sk" class="outputbox">暂无</div>
+    <p>含有服务器公钥的网址</p>
+    <div id="URL" class="outputbox">暂无</div>
+     
+                
+    <br>
+        
+    <p>收到客户的网页端发来的公钥：</p>
+    <input type='text' id="client-pk" class='inputbox' style='background-color:aqua; min-height: 3rem;
+    white-space: pre-wrap; word-wrap: break-all; overflow:auto;'>
+           
+
+  
+    <br>
+    <button onclick="getShared()"><b>服务器与本地配出共享密钥！</b></button><br>
+    <h3>共享密钥：</h3>
+    <p>16进制表示</p>
+    <div id="output16" class="outputbox" style='background-color:cornflowerblue'>暂无</div>
+    <p> <a href='./demo_cbc_server.html'>选择一 -> 继续文本加密解密</a> </p>
+        
+<!--        正文内容结束-->
+    </div>
+    
+ 
+    <div id='footbar'>
+        <button class='btn' onclick='maximize_footer()'>&#8892;</button>
+        <button class='btn' onclick='increase_footer()'>&#8896;</button>             
+        <b>&emsp;程序 执行 过程&emsp;</b> 
+        <button class='btn' onclick='decrease_footer()'>&#8897;</button>
+        <button class='btn' style='font-weight:600' onclick='hide_footer()'>&#8891;</button>
+
+    </div>  
+   
+    <div id='logger'>
+     </div>    
+
+
+        
+    
+<script>    
+
+    
+function getMyEck(){
+    MyEck = genkey();
+    let myLock = b2Base64(MyEck.public);
+    sessionStorage.setItem('myLock', myLock);
+    log('已经生成本机专用密钥。');
+    
+    document.getElementById("server-sk").innerText = b2Hex(MyEck.private);
+    url = 'https://xx.xx/xx@'+base64toUrl(myLock);
+    document.getElementById("URL").innerText = url;
+    newStatus('本地密钥可用');
+}
+    
+async function mingle2(client_Lock){
+//     console.log('url:', url);
+
+     log('开始与最后端服务器调配整链路加密……');
+     let ecdhKey; //javascript脑残，没法在try里面建立变量。
+     try{
+         ecdhKey = axlsign.sharedKey(MyEck.private, fromBase64(client_Lock) );
+     }catch(err){         
+         log('混合密钥失败，请检查含有服务器公钥的网址是否正确！'+err.stack , true);
+         return null;
+     }
+//     log(`ecdhKey ${ecdhKey}`);
+     //防破解的混淆变换:
+     let changed =new TextEncoder().encode( base64toUrl(b2Base64(ecdhKey)) );
+//     log(`changed ${changed}`);
+    let sha = await crypto.subtle.digest('SHA-256', changed);
+//    log('sha:'+sha);
+    let sharedSecret = b2Hex(new Uint8Array(sha));
+    sessionStorage.setItem('sharedSecret', sharedSecret);     
+                   
+    localStorage.setItem('crypted',"true");
+//    log(localStorage.crypted);
+    log('已实现调配整链路加密。请勿用代码读取本页的共享密钥并告知他人');
+ };
+    
+
+function getShared(){ 
+  let pk = document.getElementById("client-pk").value; //测试版
+  mingle2(pk).then( ()=>{ 
+      log('after mingle');
+      document.getElementById("output16").innerText = sessionStorage.sharedSecret;
+      newStatus('端到端加密中');  
+      setExpire(600);
+  }   
+   );
+// javascript特有的async传染，必须把async函数之后的所有语句都扔进then里
+}
+    </script>
+</body>
+</html>

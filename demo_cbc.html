@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- 测试CBC加密，与后端的加密做对比，从ecdh.html跳转至此 -->
+  <meta charset="utf-8" >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBC加密</title>
+  <!-- <link rel="stylesheet" type="text/css" href="./style.css"> -->
+  <script src= './bytesForms.js'></script>
+  <script src= './axlsign.js'></script>
+  <script src= './cryptoMgr.js'></script>
+  <link rel="stylesheet" type="text/css" href="common.css">
+    <script src= './common.js'></script>
+</head>
+<body>
+
+    <div id='header'>
+        <div style='display:inline;font-weight:600;'>AES-CBC 加密 - 模拟客户端</div> 
+        <div style='display:inline' id='status'></div>
+        <div style='display:inline' id='expire'></div>
+        <button class='btn' id='show_footer' style='display:inline; float:right; visibility:hidden' onclick='reset_footer()'>&#8896;</button>    
+    </div>
+    
+    <div id='nav'>
+        <div class='navlink'></div>
+    </div>
+    
+    <div id='main'>
+<!--        以下开始正文内容-->    
+    
+    <p>加密用的密钥，以16进制码表示：</p>
+    <div id='key' class="outputbox">暂无</div>
+     <p>加密用的偏移量原型，以16进制码表示：</p>
+    <div id='IV' class="outputbox">暂无</div>   
+    
+    <button onclick="flashIndice()"><b>获取随机偏移量:</b></button>
+    <p>偏移量取值索引</p>
+    <div id="Indice" class="outputbox">暂无</div>
+    <button onclick="return copy( document.getElementById('Indice') )"><b>复制</b></button>
+    
+    <h3>加密</h3>    
+    <p>需要加密的文字：</p>
+    <input type="text" id="srcText" class="inputbox" style='background-color:aqua'>
+    <br>
+    <button id="exe" onclick="testEncrypt()" ><b>加密！</b></button><br>
+    
+
+    <p>16进制的加密结果</p>
+    <div id="sec16" class="outputbox">暂无</div>
+    <p>SHA256校验码</p>
+    <div id="secSHA" class="outputbox">暂无</div>
+
+    
+    <h3>解密</h3>  
+    <p>需要解密的16进制码：</p>
+     <input type="text" id="srcHex" class="inputbox" style='background-color:chartreuse'> <br>
+    <p>它的sha30校验码：</p>
+     <input type="text" id="recvSHA" class="inputbox" style='background-color:chartreuse'> <br> 
+    <button id="exe" onclick="testDecrypt()" ><b>解密！</b></button><br>
+    <p>解密后文字</p>
+    <div id="plainText" class="outputbox">暂无</div>
+        
+<!--        正文内容结束-->
+    </div>
+    
+ 
+    <div id='footbar'>
+        <button class='btn' onclick='maximize_footer()'>&#8892;</button>
+        <button class='btn' onclick='increase_footer()'>&#8896;</button>             
+        <b>&emsp;程序 执行 过程&emsp;</b> 
+        <button class='btn' onclick='decrease_footer()'>&#8897;</button>
+        <button class='btn' onclick='hide_footer()'>&#8891;</button>
+
+    </div>  
+   
+    <div id='logger'>
+     </div>        
+    
+<script>
+function init(){
+     
+     initCBC().then( ()=>{
+         document.getElementById('key').innerText = b2Hex(CBCkey);
+         document.getElementById('IV').innerText = b2Hex(CBCiv);
+         if (sessionStorage.currentIndice)
+             document.getElementById('Indice').innerText = '['+ 
+                 sessionStorage.currentIndice +']';
+//         window.currentIndice = null;              
+//     javascript特有的脑残级异步传染，顶层的写法：调用async函数之后都包在then里
+     } )
+ };
+ 
+window.onload = init;
+    
+window.onunload = ()=>localStorage.removeItem('crypted'); 
+
+ 
+function flashIndice(){
+    currentIndice = randomIndice()
+    sessionStorage.setItem('currentIndice', currentIndice)
+    document.getElementById('Indice').innerText = '['+ currentIndice +']'
+};
+
+    
+ function testEncrypt(){
+     srcText = document.getElementById('srcText').value;
+     indice = eval( document.getElementById('Indice').innerText )
+     encryptT(srcText, indice).then( (result) =>{ 
+         document.getElementById('sec16').innerText = result.msg;
+         document.getElementById('secSHA').innerText = result.sha30;
+     }    )
+ };
+    
+ function testDecrypt(){
+     srcHex = document.getElementById('srcHex').value
+     indice = eval( document.getElementById('Indice').innerText )
+     sha30 = document.getElementById('recvSHA').value
+     
+     decryptT(srcHex, indice, sha30).then( (result) =>{
+         document.getElementById('plainText').innerText = result
+     })
+ };
+    
+    
+
+    </script>
+</body>
+</html>

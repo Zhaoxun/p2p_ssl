@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- 作者：阎兆珣  -->
+  <meta charset="utf-8" > 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>压缩图片</title>
+  <!-- <link rel="stylesheet" type="text/css" href="./style.css"> -->
+  <style>
+      .textbox{
+          border:1px solid black; 
+          width: 40rem;
+          padding: 0.5rem;
+          margin:0rem 0rem 0.5rem 0rem;
+      }
+    </style>
+</head>
+<body>
+    <h1>输入</h1>
+    <input type="file" accept='image/*' id="in" style='background-color:chartreuse; border-radius:0.25rem'><span id='filedata'></span>
+    <br><br>
+    请输入将图片占用空间需要压缩至多大以内
+    <input type='text' id='maxsize' oninput="this.value = this.value.replace(/[^0-9]/g, '');"> 
+<!--    多谢https://www.cnblogs.com/harry-xiaojun/p/11270940.html -->
+    <br><br>
+    允许裁边的位置&emsp;
+    左<input type="radio" name='LR' id='LR' value='l' checked>
+    右<input type="radio" name='LR' id='LR' value='r'>
+    &emsp;
+    上<input type="radio" name='UD' id='UD' value='u' checked>
+    下<input type="radio" name='UD' id='UD' value='d'>
+    &emsp;&emsp;    
+
+    <button id="exe" onclick="yasuo()" style='background-color:coral;border-color: coral; border-radius:0.5rem;box-shadow: 0.1rem 0.1rem 0.3rem #888888;'><b>压缩！</b></button><br>
+    <h1>输出</h1>
+    <p>画板  <button onclick="clear('cvs')" style='inline;'>清空画布</button>&emsp;&emsp;压缩尺度比=<span id='ratio'></span>
+    </p>
+    <canvas id='cvs' style='border:1px black solid'></canvas>
+    <br>
+    
+    <h1>结果</h1>
+    <div id='shrinkReport' class="textbox" style='background-color:darkblue; color:bisque; border:medium dashed chocolate;'>等待压缩中……</div>
+    <div><a id='download'></a></div>
+    <div id='footnote'></div>
+    
+<script>
+   
+clear('cvs');    
+    
+document.getElementById('in').onchange = (e)=>{
+    let file = e.target.files[0]
+    console.log('file:', file)
+    document.getElementById('filedata').innerText = `文件大小=${file.size}字节`
+};
+    
+function yasuo(){
+    let maxsize = Number( document.getElementById('maxsize').value )    
+    initShrink('in',maxsize)
+};
+
+    
+function shrink2canvas(fileLoc, canvasLoc,
+                          compressRatio=[1,2], 
+                          leftH=true, topH=true,
+                          doLast = ()=>{}){
+    
+    let file = document.getElementById(fileLoc).files[0]
+    let blobURL = URL.createObjectURL(file)
+    let img = new Image()
+    img.src = blobURL
+    let cvs = document.getElementById(canvasLoc)
+    document.getElementById('ratio').innerText=
+        `${compressRatio[0]}/${compressRatio[1]}`
+    console.log(`尺度压缩比=${compressRatio[0]}/${compressRatio[1]}`)
+    
+    img.onload = ()=>{
+
+        let lostWidth = img.width %compressRatio[1]
+        let lostHeight = img.height %compressRatio[1]        
+        
+        let oldWidth = img.width - lostWidth
+        let oldHeight = img.height - lostHeight            
+        let newWidth =  oldWidth *compressRatio[0] /compressRatio[1]
+        let newHeight = oldHeight *compressRatio[0] /compressRatio[1]           
+        let left=0, top=0     
+        if(leftH) left = lostWidth//裁掉左边
+        if(topH)  top = lostHeight //裁掉上边
+        
+        cvs.width = newWidth
+        cvs.height = newHeight
+        
+        let canvas = cvs.getContext("2d")        
+        canvas.drawImage(img, 
+                      left, top, oldWidth, oldHeight, 
+                     0,0, newWidth, newHeight)
+        doLast()//启动下一个函数，这么写纯粹因为这里是无法return结果的
+        
+    }  
+    
+};
+    
+    
+function clear(canvasLoc){
+    let cvs = document.getElementById(canvasLoc)
+    let canvas = cvs.getContext("2d") 
+    canvas.clearRect(0,0, cvs.width, cvs.height)
+    cvs.width = 600
+    cvs.height = 400
+};
+
+var tempJpeg; 
+function canvas2jpeg(canvasLoc, doLast=()=>{}){
+    let cvs = document.getElementById(canvasLoc)
+    cvs.toBlob( (blob)=>{
+        tempJpeg = blob
+        console.log(`图片已经保存到tempJpeg! 大小为${tempJpeg.size}`)
+        doLast()
+    },  
+    
+    "image/jpeg",0.95)
+};
+
+
+var shrinkRatios =[
+    [5,6], [4,5], [3,4], [2,3], [3,5], 
+    [1,2], [2,5], [1,3], [1,4], [1,5], [1,6]
+];
+    
+var shrinkNumbers = shrinkRatios.map(e => e[0]/e[1]);
+    
+var shrinkTarget = {fileLoc:'in', size:10240, 
+                    left:true, up:true, large2small:null, ready:false}; 
+    //起到函数循环时的控制作用，因为JS的异步禁止函数传出返回值，所以只能在异步的第二步把控制变量保存到这个变量内。
+
+function checkShrink(ratioIndex){ 
+    //循环调用   > shrink2canvas -> canvas2jpeg->checkShrink-
+    if (shrinkTarget.large2small==null){ //起始位置，压缩第一遍后的检查，由于过小的再检查    
+        if(tempJpeg.size ==shrinkTarget.size){
+            doneShrink()
+                        
+        }else if(tempJpeg.size >shrinkTarget.size){
+            
+            if (ratioIndex ==shrinkNumbers.length-1){ //已经无法再小了
+                document.getElementById('shrinkReport').innerText =
+                    `使用了最低的压缩率，文件大小依然为${tempJpeg.size}，请选个小点的文件再进行上传！`
+            }else{//可以由大到小进行试凑
+                shrinkTarget.large2small=true
+                console.log('进入从大到小压缩试凑')
+                setTimeout(checkShrink,50, ratioIndex) //再检查一遍，到下面的else if里
+            }
+
+        }else{ //<的情况
+            if (ratioIndex == 0){//第一个压缩比就够用，不用再小了
+                doneShrink()             
+                
+            }else{ //不要从小到大寻找，这里简单化处理，如果小了，就跳到大的尺度比试验
+                let nextIndex = Math.max(0, ratioIndex-2)
+                console.log(`${ratioIndex}号压缩结果小于限额，尝试更少压缩比${nextIndex}号`)
+                setTimeout(shrink2canvas, 250,
+                  shrinkTarget.fileLoc, 'cvs',
+                  shrinkRatios[nextIndex], 
+                    shrinkTarget.left, shrinkTarget.up,
+                  ()=>canvas2jpeg('cvs', ()=>checkShrink(nextIndex) )
+                )               
+            }      
+            
+        }
+           
+    }else if (shrinkTarget.large2small==true){ //从大到小找压缩比，遇到文件占用空间小于限额立即停止
+        if ( tempJpeg.size >shrinkTarget.size ){ //上一轮压得不够小
+            
+            if(ratioIndex == shrinkNumbers.length-1){
+                document.getElementById('shrinkReport').innerText =
+            `使用了最低的压缩率，文件大小依然为${tempJpeg.size}，请选个小点的文件再进行上传！`
+                
+            }else{ //没到头就试更小的一个压缩比
+                console.log(`文件还不够小，需要尝试更小的压缩比`)
+                setTimeout(shrink2canvas, 250,
+                  shrinkTarget.fileLoc, 'cvs',
+                  shrinkRatios[ratioIndex+1], 
+                    shrinkTarget.left, shrinkTarget.up,
+                  ()=>canvas2jpeg('cvs', ()=>checkShrink(ratioIndex+1) )
+                )                
+            }
+            
+        }else{ //原来大，现在已经不大了
+            doneShrink()                       
+        }
+    } //不需要考虑shrinkTarget.large2small==false，不做从小到大的寻找            
+    
+};
+    
+
+function doneShrink(){
+    let filename = document.getElementById(shrinkTarget.fileLoc).files[0].name
+     //https://www.cnblogs.com/sunliyuan/p/13925124.html
+     tempJpeg.name = filename.substring(0, filename.lastIndexOf('.')) + '_.jpeg' //稍微修改了一下文件名
+    
+    shrinkTarget.ready = true
+    document.getElementById('shrinkReport').innerText =
+    `已经达到了保存图像质量的最少压缩量，图片文件已备好！文件占用空间${tempJpeg.size}`     
+    afterShrink() 
+};
+    
+function afterShrink(){ //这个根据实际的需求进行更改     
+     let tempName = tempJpeg.name
+     
+     let link =document.getElementById('download')
+     link.href = URL.createObjectURL(tempJpeg)
+     link.download = tempName
+     link.innerText = '下载压缩结果：'+tempName  
+     document.getElementById('footnote').innerText = "作者：阎兆珣"
+};
+    
+function gaugeShrink(osize, maxsize){ //纯数学推算，估计用shrinkRatio第几位合适
+    let size 
+    let i = 0
+    while (i<shrinkNumbers.length) {
+        let r = shrinkNumbers[i]
+        size = osize * r * r
+        if(size <= maxsize){break}
+        i++
+    }
+    if(i==0){
+        return 0
+    }else{
+        return i-1 //保证不会取到最后一位，而且刚开始取的值反而会让压缩后超过原大小
+    }    
+};
+
+
+function initShrink(fileLoc, maxsize){ //压缩逻辑入口处
+    shrinkTarget.fileLoc =  fileLoc
+    shrinkTarget.ready = false 
+    shrinkTarget.large2small = null
+    document.getElementById('LR').value=='l'? shrinkTarget.left=true: shrinkTarget.left=false
+    document.getElementById('UD').value=='u'? shrinkTarget.up=true: shrinkTarget.up=false
+    let osize
+    let compare
+    try{
+        osize = document.getElementById(fileLoc).files[0].size
+        compare = (osize <= maxsize)
+    }catch{
+        alert('请输入正确的文件上传位置，以及合法的文件占用空间限额！')
+        return
+    }
+    if(compare){ //已经符合要求，不用压缩        
+        tempJpeg = document.getElementById(fileLoc).files[0]
+        shrink2canvas(fileLoc, 'cvs', [1,1])
+        doneShrink()
+        document.getElementById('shrinkReport').innerText =
+        '无需压缩，图片文件已备好！' 
+        return
+    }
+    
+    gaugeIndex = gaugeShrink(osize, maxsize)
+    shrinkTarget.size = maxsize
+    console.log(`初始使用的压缩编号为${gaugeIndex}`)
+    
+    setTimeout(shrink2canvas, 50,
+      shrinkTarget.fileLoc, 'cvs',
+      shrinkRatios[gaugeIndex], 
+        shrinkTarget.left, shrinkTarget.up,
+      ()=>canvas2jpeg('cvs', ()=>checkShrink(gaugeIndex) )
+    ) 
+};    
+   
+    </script>
+</body>
+</html>
