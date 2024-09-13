@@ -1,0 +1,146 @@
+*{
+/*    box-sizing: border-box;*/
+    overflow-wrap: anywhere;
+}
+
+body{
+/*    display: flex;*/
+    
+    --navheight: 1.5em;
+    --barheight: 1.5em;
+    --lgheight: 4.5em;
+    --wth: 40em;  
+    margin:0;
+
+    justify-content: center;
+    align-items: center;
+/*    padding-bottom: var(--ftheight);*/
+/*    overflow: hidden;*/
+    width: 100vw;
+    height: 100%;
+/*    position:absolute;*/
+    position: fixed;
+/*    position:relative;*/
+}
+
+#header{
+    
+    height: 1.5em;
+    background-color:yellow;
+}
+
+#nav{
+
+    height: var(--navheight);  
+    background-color:aquamarine;
+}
+
+#main{
+    overflow-x: hidden;
+    overflow-y: scroll;
+    padding-left:1em;
+
+    width: calc(100% - 1em);
+    position:fixed;
+    top: calc( 1.5em + var(--navheight) );
+    bottom: calc(var(--barheight) + var(--lgheight));
+
+}
+
+/*https://www.xuanfengge.com/demo/201311/scroll/css3-scroll.html #style2*/
+
+#main::-webkit-scrollbar-track
+{
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.7);
+	border-radius: 12px;
+	background-color:dodgerblue;
+}
+
+#main::-webkit-scrollbar
+{
+	width: 15px;
+	background-color:white;
+}
+
+#main::-webkit-scrollbar-thumb
+{
+	border-radius: 12px;
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
+	background-color:beige;
+}
+
+/*下面的框架必须倒着向上写*/
+#footer{
+/*    原来包括上面的footbar和下面的logger，因为css自己计算高度有误，已经拆散*/
+}
+
+#logger{
+    background-color: #111;
+    color:antiquewhite;
+    width: calc(100% - 1em);
+    padding-left:0.5em;
+    padding-right:0.5em;
+    position:fixed;
+/*    top: calc(100vh - 4.5em);*/
+    bottom:0;
+    height: var(--lgheight);    
+    overflow-x: hidden;
+    overflow-y: scroll; 
+    text-align: left;
+/*    margin-right: calc(100vw - 100%);*/
+}   
+
+#footbar{
+    margin:0;
+    width: inherit;    
+    text-align:center;
+    background-color:forestgreen;
+    position:fixed;
+    height:var(--barheight);
+    bottom:var(--lgheight);
+}    
+ 
+
+button{
+    background-color:coral;
+    border-color: coral; 
+    border-radius:0.5em;
+    
+    box-shadow: 0.2em 0.2em #ccc;
+    text-indent: 0.25em;
+    vertical-align: middle;
+}
+
+.btn{
+    display: inline;
+    background-color:antiquewhite;
+    border-color:beige;
+    border-radius:0.25em;    
+    box-shadow:none;
+    
+    text-indent:0;
+    font-weight:500;
+    height: 1.5em;
+    box-sizing: border-box;
+    vertical-align: middle;
+    line-height: 0.25em;
+    
+}
+
+
+ .inputbox, .outputbox{           
+      width: var(--wth);
+      padding: 0.5rem;
+      margin:0rem 0rem 0.5rem 0rem;         
+  }
+
+  .inputbox{
+
+      border:1px solid black;
+      border-radius:0.25rem
+  }    
+  .outputbox{
+      background-color:darkblue; 
+      border:medium dashed chocolate;
+      color:bisque;      
+  }
