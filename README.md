@@ -11,7 +11,7 @@ Only webpage part is published. demo*.html files make a very great tutorial on h
 ####css
 common.css
 
-####javascript
+#### javascript
 common.js - display functions related to common.css
 axlsign.js - curve X25519 ecdh key swap (from github)
 bytesForms.js - deal with transfermation between bytes and string formats 
@@ -19,7 +19,7 @@ cryptoMgr.js - core SSL programs
 file.js - uploading files encrypted 
 photo.js - shrink image files within given size
 
-####html
+#### html
 /demo
 demo_ecdh_server.html
 demo_cbc_server.html
