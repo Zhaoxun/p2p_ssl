@@ -86,4 +86,4 @@ upstream yan{
 and you also need to put all html files in this folder: `/var/yan/` on the proxy site/server.
 
 ## Special Thanks
-1. [https://github.com/wavesplatform/curve25519-js/blob/master/axlsign.js](axlsign.js)
+1.  [axlsign.js](https://github.com/wavesplatform/curve25519-js/blob/master/axlsign.js)
