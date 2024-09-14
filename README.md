@@ -12,8 +12,8 @@ Only webpage part is published. demo*.html files make a very great tutorial on h
 common.css
 
 #### javascript
-common.js - display functions related to common.css
-axlsign.js - curve X25519 ecdh key swap (from github)
+- common.js - display functions related to common.css
+- axlsign.js - curve X25519 ecdh key swap (from github)
 bytesForms.js - deal with transfermation between bytes and string formats 
 cryptoMgr.js - core SSL programs
 file.js - uploading files encrypted 
