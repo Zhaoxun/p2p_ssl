@@ -14,36 +14,38 @@ common.css
 #### javascript
 - common.js - display functions related to common.css
 - axlsign.js - curve X25519 ecdh key swap (from github)
-bytesForms.js - deal with transfermation between bytes and string formats 
-cryptoMgr.js - core SSL programs
-file.js - uploading files encrypted 
-photo.js - shrink image files within given size
+- bytesForms.js - deal with transfermation between bytes and string formats 
+- cryptoMgr.js - core SSL programs
+- file.js - uploading files encrypted 
+- photo.js - shrink image files within given size
 
 #### html
 /demo
-demo_ecdh_server.html
-demo_cbc_server.html
-demo_ecdh.html - mock client, entry point
-demo_cbc.html - mock client, from the bottom link of demo_ecdh.html
- - see screenshots in folder 'demo_walkthrough'
+- demo_ecdh_server.html
+- demo_cbc_server.html
+- demo_ecdh.html - mock client, entry point
+- demo_cbc.html - mock client, from the bottom link of demo_ecdh.html
+  
+ --see also screenshots in folder 'demo_walkthrough'
 
 /text
-text_ecdh.html - actual entry point is like 
+- text_ecdh.html - actual entry point is like 
 `https://xx.xx/yan/text@cD4ivSkz9OCGDdLLvXmkYlRLXe16tDTdVZieWUOvDlA.`
-
-text_cbc.html
-- to run these two, you need a proper server program, which is not open here.
+- text_cbc.html
+  
+-- to run these two, you need a proper server program, which is not open here.
 
 /file
-file_ecdh.html
-file_cbc.html - upload an image given key is shared between here and server, and it shrinks photo before uploading
-- to run these two, you need a proper server program, which is not open here.
+- file_ecdh.html
+- file_cbc.html - upload an image given key is shared between here and server, and it shrinks photo before uploading
+  
+-- to run these two, you need a proper server program, which is not open here.
 
 /photo
-photoShrink.html - a standalone webpage to shrink image files to below given size
+- photoShrink.html - a standalone webpage to shrink image files to below given size
 
 /bug
-bug_report.html
+- bug_report.html
 
 ## Real Installation Hint for Server
 
