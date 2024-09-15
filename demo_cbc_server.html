@@ -116,7 +116,7 @@ window.onunload = ()=>localStorage.removeItem('crypted');
     
  function testDecrypt(){
      srcHex = document.getElementById('srcHex').value
-     indice = eval( document.getElementById('Indice').innerText )
+     indice = eval( document.getElementById('Indice').value )
      if (indice==undefined){
          log('『偏移量取值索引』栏为空！')
          return
